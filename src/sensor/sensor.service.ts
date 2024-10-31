@@ -1,14 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import * as mqtt from 'mqtt';
 import { ConfigService } from '@nestjs/config';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Thereis, ThereisDocument } from './schemas/sensor.schema';
 
 @Injectable()
 export class SensorService {
   private mqttClient: mqtt.MqttClient;
-  private currentStatus: string | null = null;  // null로 초기화
 
   constructor(
     private configService: ConfigService,
+    @InjectModel(Thereis.name) private thereisModel: Model<ThereisDocument>
   ) {
     this.initializeMqtt();
   }
@@ -28,7 +31,7 @@ export class SensorService {
       });
     });
 
-    this.mqttClient.on('message', (topic, message) => {
+    this.mqttClient.on('message', async (topic, message) => {
       const receivedValue = message.toString().trim();
       
       console.log('----------------------------------------');
@@ -37,10 +40,9 @@ export class SensorService {
       console.log('----------------------------------------')
 
       if (receivedValue === '0' || receivedValue === '1') {
-        this.currentStatus = receivedValue;
-        console.log('상태 업데이트 성공:', this.currentStatus);
+        console.log('상태 업데이트 성공:', receivedValue);
+        await this.thereisModel.create({ status: receivedValue });
       } else {
-        this.currentStatus = null;  // 유효하지 않은 값이 오면 null로 설정
         console.log('유효하지 않은 값 수신');
       }
     });
@@ -51,11 +53,22 @@ export class SensorService {
   }
 
   async getCurrentStatus() {
-    if (this.currentStatus === null || !['0', '1'].includes(this.currentStatus)) {
+    try {
+      const latestStatus = await this.thereisModel
+        .findOne()
+        .sort({ _id: -1 })
+        .exec();
+
+      if (!latestStatus) {
+        return null;
+      }
+
+      return {
+        status: latestStatus.status
+      };
+    } catch (error) {
+      console.error('Error fetching status from database:', error);
       return null;
     }
-    return {
-      thereis: this.currentStatus
-    };
   }
 }

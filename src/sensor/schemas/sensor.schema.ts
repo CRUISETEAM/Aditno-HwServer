@@ -1,12 +1,12 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
-export type SensorDocument = Sensor & Document;
+export type ThereisDocument = Thereis & Document;
 
-@Schema()
-export class Sensor {
+@Schema({ collection: 'thereis' })
+export class Thereis {
   @Prop({ required: true, type: String, enum: ['0', '1'] })
-  thereis: string;
+  status: string;
 }
 
-export const SensorSchema = SchemaFactory.createForClass(Sensor);
+export const ThereisSchema = SchemaFactory.createForClass(Thereis);
