@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { SensorModule } from './sensor/sensor.module';
+import { ServoModule } from './servo/servo.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { SensorModule } from './sensor/sensor.module';
       inject: [ConfigService],
     }),
     SensorModule,
+    ServoModule,
   ],
 })
 export class AppModule {}
