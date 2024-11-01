@@ -2,7 +2,7 @@ import { Controller, Get, Logger } from '@nestjs/common';
 import { SensorService } from './sensor.service';
 import { ApiTags, ApiResponse } from '@nestjs/swagger';
 
-@ApiTags('sensor')
+@ApiTags('사물함 내 물건 존재 여부 확인')
 @Controller('sensor')
 export class SensorController {
   private readonly logger = new Logger(SensorController.name);

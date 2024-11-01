@@ -2,7 +2,7 @@ import { Controller, Get, Logger } from '@nestjs/common';
 import { ServoService } from './servo.service';
 import { ApiTags, ApiResponse } from '@nestjs/swagger';
 
-@ApiTags('servo')
+@ApiTags('문 열림/닫힘 상태 확인')
 @Controller('servo')
 export class ServoController {
   private readonly logger = new Logger(ServoController.name);
