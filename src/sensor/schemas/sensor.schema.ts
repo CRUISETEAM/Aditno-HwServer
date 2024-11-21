@@ -5,7 +5,10 @@ export type ThereisDocument = Thereis & Document;
 
 @Schema({ collection: 'thereis' })
 export class Thereis {
-  @Prop({ required: true, type: String, enum: ['0', '1'] })
+  @Prop({ required: true, type: Number, min: 1, max: 2 })
+  sensorId: number;
+
+  @Prop({ required: true, type: String })
   status: string;
 }
 

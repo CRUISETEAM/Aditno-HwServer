@@ -20,7 +20,13 @@ export class SensorService {
     const mqttUrl = this.configService.get<string>('MQTT_URL');
     const topic = this.configService.get<string>('MQTT_TOPIC');
 
-    this.mqttClient = mqtt.connect(mqttUrl);
+    const options = {
+      clientId: `mqtt_${Math.random().toString(16).slice(3)}`,
+      clean: true,
+      connectTimeout: 4000,
+    };
+
+    this.mqttClient = mqtt.connect(mqttUrl, options);
 
     this.mqttClient.on('connect', () => {
       console.log('MQTT 연결 성공!');
@@ -32,18 +38,36 @@ export class SensorService {
     });
 
     this.mqttClient.on('message', async (topic, message) => {
-      const receivedValue = message.toString().trim();
-      
-      console.log('----------------------------------------');
-      console.log(`토픽: ${topic}`);
-      console.log(`수신된 값: ${receivedValue}`);
-      console.log('----------------------------------------')
+      try {
+        const messageStr = message.toString().trim();
+        const [sensorId, status] = messageStr.split(' ');
+        
+        console.log('----------------------------------------');
+        console.log(`토픽: ${topic}`);
+        console.log(`수신된 값: ${messageStr}`);
+        console.log(`센서 ID: ${sensorId}`);
+        console.log(`상태값: ${status}`);
 
-      if (receivedValue === '0' || receivedValue === '1') {
-        console.log('상태 업데이트 성공:', receivedValue);
-        await this.thereisModel.create({ status: receivedValue });
-      } else {
-        console.log('유효하지 않은 값 수신');
+        const sensorIdNum = parseInt(sensorId);
+
+        if (sensorIdNum === 1 || sensorIdNum === 2) {
+          const newSensor = new this.thereisModel({
+            sensorId: sensorIdNum,
+            status: status
+          });
+
+          await newSensor.save();
+          console.log('데이터베이스 저장 성공:', newSensor);
+        } else {
+          console.log('유효하지 않은 센서 ID:', sensorIdNum);
+        }
+        console.log('----------------------------------------');
+
+      } catch (error) {
+        console.error('에러 발생:', error);
+        if (error.errors) {
+          console.error('검증 에러:', error.errors);
+        }
       }
     });
 
@@ -54,18 +78,25 @@ export class SensorService {
 
   async getCurrentStatus() {
     try {
-      const latestStatus = await this.thereisModel
-        .findOne()
-        .sort({ _id: -1 })
-        .exec();
+      const latestStatuses = [1, 2].map(sensorId => {
+        return {
+          sensorId,
+          status: '0'  
+        }
+      });
 
-      if (!latestStatus) {
-        return null;
+      for (let i = 0; i < latestStatuses.length; i++) {
+        const status = await this.thereisModel
+          .findOne({ sensorId: latestStatuses[i].sensorId })
+          .sort({ _id: -1 })
+          .exec();
+        
+        if (status) {
+          latestStatuses[i].status = status.status;
+        }
       }
 
-      return {
-        status: latestStatus.status
-      };
+      return latestStatuses;
     } catch (error) {
       console.error('Error fetching status from database:', error);
       return null;
