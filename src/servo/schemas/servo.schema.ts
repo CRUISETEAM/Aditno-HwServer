@@ -5,7 +5,10 @@ export type ServoDocument = Servo & Document;
 
 @Schema({ collection: 'servo' })
 export class Servo {
-  @Prop({ required: true, type: String, enum: ['0', '1'] })
+  @Prop({ required: true, type: Number }) 
+  servoId: number;
+
+  @Prop({ required: true, type: String, enum: ['0', '1'], default: '0' })
   status: string;
 }
 
