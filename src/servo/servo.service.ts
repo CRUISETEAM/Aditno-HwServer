@@ -38,16 +38,29 @@ export class ServoService {
       
       console.log('----------------------------------------');
       console.log(`토픽: ${topic}`);
-      console.log(`서보모터 상태: ${receivedValue}`);
+      console.log(`수신된 메시지: ${receivedValue}`);
       console.log('----------------------------------------');
 
-      const servoId = this.servoStatus.length + 1;
-      if (receivedValue === '0' || receivedValue === '1') {
-        console.log('서보모터 상태 업데이트 성공:', receivedValue);
-        this.servoStatus.push({ servoId, status: receivedValue });
-        await this.servoModel.create({ servoId, status: receivedValue });
+      const [servoIdStr, statusStr] = receivedValue.split(' ');
+      const servoId = parseInt(servoIdStr);
+
+      if (!isNaN(servoId) && (statusStr === '0' || statusStr === '1')) {
+        console.log(`서보모터 ${servoId}번 상태 업데이트 성공:`, statusStr);
+        
+        const existingIndex = this.servoStatus.findIndex(servo => servo.servoId === servoId);
+        if (existingIndex !== -1) {
+          this.servoStatus[existingIndex].status = statusStr;
+        } else {
+          this.servoStatus.push({ servoId, status: statusStr });
+        }
+
+        await this.servoModel.findOneAndUpdate(
+          { servoId },
+          { status: statusStr },
+          { upsert: true }
+        );
       } else {
-        console.log('유효하지 않은 값 수신');
+        console.log('유효하지 않은 형식의 메시지 수신');
       }
     });
 
